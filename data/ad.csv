@@ -1,0 +1,41 @@
+city,lat,lng,country,iso2,admin_name,capital,population,population_proper
+Andorra la Vella,42.5000,1.5000,Andorra,AD,Andorra la Vella,primary,22615,22615
+Escaldes-Engordany,42.5089,1.5408,Andorra,AD,Escaldes-Engordany,admin,14917,14917
+Encamp,42.5361,1.5828,Andorra,AD,Encamp,admin,12155,12155
+La Massana,42.5444,1.5144,Andorra,AD,La Massana,admin,11113,11113
+Sant Julià de Lòria,42.4650,1.4911,Andorra,AD,Sant Julià de Lòria,admin,9694,9694
+Canillo,42.5667,1.6000,Andorra,AD,Canillo,admin,5160,5160
+Ordino,42.5550,1.5331,Andorra,AD,Ordino,admin,4858,4858
+Santa Coloma,42.4939,1.4977,Andorra,AD,Andorra la Vella,,3002,3002
+Pas de la Casa,42.5423,1.7338,Andorra,AD,Canillo,,2996,2996
+Arinsal,42.5667,1.4833,Andorra,AD,La Massana,,1722,1722
+El Tarter,42.5833,1.6500,Andorra,AD,Canillo,,1678,1678
+Vila,42.5333,1.5667,Andorra,AD,Encamp,,1418,1418
+Les Bons,42.5333,1.5833,Andorra,AD,Encamp,,1252,1252
+Soldeu,42.5769,1.6672,Andorra,AD,Canillo,,1109,1109
+Sispony,42.5333,1.5167,Andorra,AD,La Massana,,1081,1081
+La Cortinada,42.5667,1.5167,Andorra,AD,Ordino,,883,883
+Aixirivall,42.4667,1.5000,Andorra,AD,Sant Julià de Lòria,,871,871
+Anyós,42.5346,1.5416,Andorra,AD,La Massana,,853,853
+Escàs,42.5500,1.5167,Andorra,AD,La Massana,,740,740
+Erts,42.5636,1.4950,Andorra,AD,La Massana,,451,451
+Ransol,42.5833,1.6333,Andorra,AD,Canillo,,294,294
+Sornàs,42.5667,1.5333,Andorra,AD,Ordino,,251,251
+Aubinyà,42.4528,1.4930,Andorra,AD,Sant Julià de Lòria,,238,238
+Arans,42.5833,1.5167,Andorra,AD,Ordino,,238,238
+Pal,42.5500,1.4833,Andorra,AD,La Massana,,235,235
+Llorts,42.6000,1.5333,Andorra,AD,Ordino,,204,204
+Juberri,42.4400,1.5067,Andorra,AD,Sant Julià de Lòria,,183,183
+El Serrat,42.6167,1.5500,Andorra,AD,Ordino,,138,138
+La Comella,42.5012,1.5288,Andorra,AD,Andorra la Vella,,,
+Engordany,42.5116,1.5414,Andorra,AD,Escaldes-Engordany,,,
+Els Vilars,42.5164,1.5336,Andorra,AD,Escaldes-Engordany,,,
+La Plana,42.5047,1.5386,Andorra,AD,Escaldes-Engordany,,,
+Ràmio,42.4973,1.5740,Andorra,AD,Escaldes-Engordany,,,
+Engolasters,42.5000,1.5667,Andorra,AD,Escaldes-Engordany,,,
+El Tremat,42.5335,1.5806,Andorra,AD,Encamp,,,
+Puiol del Piu,42.5667,1.5000,Andorra,AD,La Massana,,,
+El Pui,42.5473,1.5144,Andorra,AD,La Massana,,,
+L’Aldosa,42.5430,1.5237,Andorra,AD,La Massana,,,
+Mas de Ribafeta,42.5693,1.4886,Andorra,AD,La Massana,,,
+Xixerella,42.5500,1.4833,Andorra,AD,La Massana,,,
