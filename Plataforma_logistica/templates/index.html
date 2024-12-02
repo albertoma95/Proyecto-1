@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Seleccionar opción</title>
+</head>
+<body>
+    <h1>Selecciona una opción</h1>
+    <form method="post" action="/Plataforma_logistica/procesar-opcion/">
+        {% csrf_token %}
+        <label for="opcion">Opciones:</label>
+        <select name="opcion" id="opcion">
+            {% for opcion in opciones %}
+                <option value="{{ opcion }}">{{ opcion }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Enviar</button>
+    </form>
+</body>
+</html>
