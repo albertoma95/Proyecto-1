@@ -1,8 +1,9 @@
 from django.shortcuts import render
 from django.http import HttpResponse
+from .models import destino
 
 def index(request):
-    opciones = ['Opción 1', 'Opción 2', 'Opción 3']
+    opciones = destino.objects.all()
     return render(request, 'index.html', {'opciones': opciones})
 
 

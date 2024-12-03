@@ -10,7 +10,7 @@
         <label for="opcion">Opciones:</label>
         <select name="opcion" id="opcion">
             {% for opcion in opciones %}
-                <option value="{{ opcion }}">{{ opcion }}</option>
+                <option value="{{ opcion.id }}">{{ opcion.nombre }}</option>
             {% endfor %}
         </select>
         <button type="submit">Enviar</button>
