@@ -1,19 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Seleccionar opción</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejecutar función</title>
 </head>
 <body>
-    <h1>Selecciona una opción</h1>
-    <form method="post" action="/Plataforma_logistica/procesar-opcion/">
+    <h1>Plataforma logística</h1>
+    <form action="/Plataforma_logistica/ejecutar_funcion/" method="POST">
         {% csrf_token %}
-        <label for="opcion">Opciones:</label>
-        <select name="opcion" id="opcion">
-            {% for opcion in opciones %}
-                <option value="{{ opcion.id }}">{{ opcion.nombre }}</option>
-            {% endfor %}
-        </select>
-        <button type="submit">Enviar</button>
+        <button type="submit">Generar pedidos</button>
     </form>
 </body>
 </html>

@@ -3,5 +3,5 @@ from . import views
 
 urlpatterns = [
     path("", views.index, name="index"),
-    path('procesar-opcion/', views.procesar_opcion, name='procesar_opcion'),
+    path('ejecutar_funcion/', views.ejecutar_funcion, name='ejecutar_funcion'),
 ]
