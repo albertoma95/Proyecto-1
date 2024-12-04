@@ -232,22 +232,22 @@ def map_view(request):
             coords = [location_coords[node] for node in path if node in location_coords]
             route_coords.extend(coords)
 
-        # Dibujar ruta del camión
+        # Dibujar ruta del camión con el total de cantidad en el tooltip
         if route_coords:
             folium.PolyLine(
                 locations=route_coords,
                 color=colors[idx % len(colors)],
                 weight=3,
                 opacity=0.8,
-                tooltip=f"Camión {idx + 1}: Costo {cost:.1f} km"
+                tooltip=f"Camión {idx + 1}: Carga Total {truck['total_quantity']} unidades"
             ).add_to(m)
 
-        # Añadir marcadores para los destinos
+        # Añadir marcadores para los destinos con la cantidad del pedido
         for order in truck['orders']:
-            order_id, destination, _, _ = order
+            order_id, destination, _, total_quantity = order
             folium.Marker(
                 location=location_coords[destination],
-                popup=f"Pedido {order_id}: {destination} (Camión {idx + 1})",
+                popup=f"Pedido {order_id}: {destination} (Cantidad: {total_quantity} unidades, Camión {idx + 1})",
                 icon=folium.Icon(color=colors[idx % len(colors)], icon="info-sign")
             ).add_to(m)
 
