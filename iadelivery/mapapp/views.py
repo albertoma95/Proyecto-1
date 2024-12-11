@@ -45,7 +45,7 @@ def get_orders():
         """)
         locations = cursor.fetchall()
 
-        # Obtener pedidos (ahora incluyendo order_ready)
+        # Obtener pedidos (incluyendo order_ready)
         cursor.execute("""
             SELECT id_order, name AS destination, expiration_date, total_quantity, order_ready
             FROM Order_Expiration1
@@ -75,6 +75,7 @@ def precompute_distances(graph, nodes):
     return dist_matrix
 
 def calculate_optimal_route(graph, origin, destinations):
+    # Resolución simplificada tipo TSP
     all_locations = [origin] + destinations
     n = len(all_locations)
     index = {all_locations[i]: i for i in range(n)}
@@ -120,61 +121,70 @@ def calculate_optimal_route(graph, origin, destinations):
 
     return min_cost, path
 
+def can_assign_order_to_truck(order, truck, graph, origin):
+    order_id, destination, expiration_date, total_quantity, order_ready = order
+    if truck['total_quantity'] + total_quantity > truck['capacity']:
+        return False
+
+    expiration_date_obj = datetime.strptime(str(expiration_date), '%Y-%m-%d')
+    current_date = truck['current_date']
+    distance, _ = dijkstra(graph, origin, destination)
+    if distance == float('inf'):
+        return False
+    speed = 120.0
+    time_to_destination = timedelta(hours=distance / speed)
+    arrival_date = current_date + time_to_destination
+    if arrival_date > expiration_date_obj:
+        return False
+
+    return True
+
 def assign_orders_to_trucks(graph, origin, orders, capacity):
+    unassigned_orders = list(orders)
     trucks = []
-    unassigned_orders = orders.copy()
+    speed = 120.0
+    unassigned_orders.sort(key=lambda x: x[2])  # x[2] es expiration_date
 
     while unassigned_orders:
         truck = {
             'orders': [],
-            'total_quantity': 0
+            'total_quantity': 0,
+            'capacity': capacity,
+            'current_date': datetime.now()
         }
-        assigned_orders = []
 
-        for order in unassigned_orders:
-            # Ahora order incluye order_ready en el índice 4
-            # Desempaquetamos:
-            # id_order, destination, expiration_date, total_quantity, order_ready
-            order_id, destination, expiration_date, total_quantity, order_ready = order
+        assigned_this_round = True
+        while assigned_this_round and unassigned_orders:
+            assigned_this_round = False
+            for order in unassigned_orders:
+                if truck['orders']:
+                    max_order_ready = max(datetime.strptime(str(o[4]), '%Y-%m-%d') for o in truck['orders'])
+                else:
+                    max_order_ready = datetime.strptime(str(order[4]), '%Y-%m-%d')
 
-            if truck['total_quantity'] + total_quantity > capacity:
-                continue
+                if max_order_ready > truck['current_date']:
+                    truck['current_date'] = max_order_ready
 
-            # Comprobaciones de expiración y tiempos no cambian en esta parte,
-            # se podrían hacer más chequeos si fuera necesario.
-            
-            expiration_date_obj = datetime.strptime(str(expiration_date), '%Y-%m-%d')
-            current_date = datetime.now()
-
-            distance, _ = dijkstra(graph, origin, destination)
-            if distance == float('inf'):
-                continue
-
-            speed = 120.0
-            time_to_destination = timedelta(hours=distance / speed)
-            arrival_date = current_date + time_to_destination
-
-            if arrival_date > expiration_date_obj:
-                continue
-
-            # Asignar el pedido
-            truck['orders'].append(order)
-            truck['total_quantity'] += total_quantity
-            assigned_orders.append(order)
+                if can_assign_order_to_truck(order, truck, graph, origin):
+                    truck['orders'].append(order)
+                    truck['total_quantity'] += order[3]
+                    unassigned_orders.remove(order)
+                    assigned_this_round = True
+                    break
 
         if truck['orders']:
             trucks.append(truck)
 
-        for order in assigned_orders:
-            unassigned_orders.remove(order)
-
-        if not assigned_orders:
-            break
-
     return trucks
 
 def haversine_distance(lat1, lon1, lat2, lon2):
-    return math.sqrt((lat2 - lat1)**2 + (lon2 - lon1)**2)
+    R = 6371.0
+    dLat = math.radians(lat2 - lat1)
+    dLon = math.radians(lon2 - lon1)
+    a = (math.sin(dLat/2)**2) + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * (math.sin(dLon/2)**2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    distance = R * c
+    return distance
 
 base_colors = {
     'blue': '#0000FF',
@@ -202,15 +212,16 @@ def map_view(request):
     graph = load_graph()
     locations, orders = get_orders()
     origin = "Mataró"
-    capacity = 50000
+    capacity = 60000
 
     if origin not in graph:
         return render(request, "error.html", {"message": "'Mataró' no está en el grafo."})
 
     location_coords = {loc[0]: (loc[1], loc[2]) for loc in locations}
+    m = folium.Map(location=[40.0, -3.7], zoom_start=6, tiles='CartoDB positron')
 
-    m = folium.Map(location=location_coords[origin], zoom_start=6.5, tiles='CartoDB positron')
 
+    # Dibujar las conexiones
     for province, neighbors in graph.items():
         if province in location_coords:
             for neighbor, distance in neighbors.items():
@@ -222,24 +233,28 @@ def map_view(request):
                         opacity=0.5
                     ).add_to(m)
 
+    # Asignar pedidos a camiones
     trucks = assign_orders_to_trucks(graph, origin, orders, capacity)
+
     original_colors = ['blue', 'green', 'purple', 'orange', 'darkred', 'cadetblue']
     speed = 120.0
     daily_hours = 8
-    daily_limit_distance = daily_hours * speed
+    daily_limit_distance = daily_hours * speed  # 960 km/día
+
+    trucks_info_for_template = []
 
     for idx, truck in enumerate(trucks):
-        # Encontrar la fecha en que todos los pedidos del camión están listos
-        # order = (id_order, destination, expiration_date, total_quantity, order_ready)
-        max_order_ready = max(datetime.strptime(str(o[4]), '%Y-%m-%d') for o in truck['orders'])
+        if not truck['orders']:
+            continue
 
-        # La ruta no puede empezar antes de max_order_ready
-        start_route_date = max_order_ready  # Día 1 corresponderá a max_order_ready
+        max_order_ready = max(datetime.strptime(str(o[4]), '%Y-%m-%d') for o in truck['orders'])
+        start_route_date = max_order_ready
 
         destinations = [order[1] for order in truck['orders']]
         cost, best_route = calculate_optimal_route(graph, origin, destinations)
 
         full_route_coords = []
+        route_segments = []
         for i in range(len(best_route) - 1):
             from_node = best_route[i]
             to_node = best_route[i + 1]
@@ -252,6 +267,7 @@ def map_view(request):
                     full_route_coords.extend(segment_coords)
             else:
                 full_route_coords.extend(segment_coords)
+            route_segments.append((to_node, segment_coords[-1]))
 
         daily_routes = []
         current_day_coords = [full_route_coords[0]]
@@ -291,41 +307,84 @@ def map_view(request):
                     daily_routes.append((day_count, current_day_coords.copy()))
                     day_count += 1
                     current_day_coords = [p_point]
-                    dist_to_cover = dist_to_cover - remaining_distance_day
+                    dist_to_cover -= remaining_distance_day
                     remaining_distance_day = daily_limit_distance
                     start_temp = p_point
+
                 current_day_coords.append(end_temp)
                 remaining_distance_day -= dist_to_cover
 
         if current_day_coords:
             daily_routes.append((day_count, current_day_coords.copy()))
 
-        # Color base
+        # Crear un FeatureGroup por camión
+        truck_group = folium.FeatureGroup(name=f"Camión {idx+1}", show=True)
+
+        # Dibujar rutas en el mapa dentro del FeatureGroup
         base_color_name = original_colors[idx % len(original_colors)]
         base_hex = base_colors[base_color_name]
 
-        # Dibujar las rutas día a día con diferentes tonos y mostrar fecha real
         for day_num, coords_list in daily_routes:
             day_color = darken_color(base_hex, day_num)
-            # Calcular la fecha real del día actual: start_route_date es día 1
             current_date_for_day = (start_route_date + timedelta(days=day_num - 1)).strftime('%Y-%m-%d')
             folium.PolyLine(
                 locations=coords_list,
                 color=day_color,
                 weight=3,
                 opacity=0.8,
-                tooltip=f"Camión {idx + 1}, Día {day_num} ({current_date_for_day}): Carga {truck['total_quantity']} unidades / Total {cost:.2f} km"
-            ).add_to(m)
+                tooltip=(f"Camión {idx + 1}, Día {day_num} ({current_date_for_day}): "
+                         f"Carga {truck['total_quantity']} unidades / Total {cost:.2f} km")
+            ).add_to(truck_group)
 
+        # Marcar pedidos en el mapa
         for order in truck['orders']:
             order_id, destination, expiration_date, total_quantity, order_ready = order
             folium.Marker(
                 location=location_coords[destination],
-                popup=(f"Pedido {order_id}: {destination}"
-                       f"(Cantidad: {total_quantity} unidades, Camión {idx + 1})\n"
-                       f"Listo desde: {order_ready}"),
+                popup=(f"Pedido {order_id}: {destination}\n"
+                       f"Cantidad: {total_quantity} unidades, Camión {idx + 1}\n"
+                       f"Listo desde: {order_ready}\n"
+                       f"Caduca: {expiration_date}"),
                 icon=folium.Icon(color=base_color_name, icon="info-sign")
-            ).add_to(m)
+            ).add_to(truck_group)
+
+        truck_group.add_to(m)
+
+        # Determinar el día de entrega de cada pedido
+        daily_order_deliveries = {d[0]: [] for d in daily_routes}
+
+        def find_day_for_coord(coord):
+            for dnum, clist in daily_routes:
+                if coord in clist:
+                    return dnum
+            return None
+
+        for order in truck['orders']:
+            order_id, destination, expiration_date, total_quantity, order_ready = order
+            for (node, node_coord) in route_segments:
+                if node == destination:
+                    delivery_day = find_day_for_coord(node_coord)
+                    if delivery_day is not None:
+                        daily_order_deliveries[delivery_day].append({
+                            'id': order_id,
+                            'expiration_date': expiration_date
+                        })
+                    break
+
+        truck_info = {
+            'truck_number': idx + 1,
+            'total_days': day_count,
+            'start_date': start_route_date.strftime('%Y-%m-%d'),
+            'daily_orders': []
+        }
+        for dnum in range(1, day_count+1):
+            orders_this_day = daily_order_deliveries.get(dnum, [])
+            truck_info['daily_orders'].append({
+                'day_num': dnum,
+                'orders': orders_this_day
+            })
+
+        trucks_info_for_template.append(truck_info)
 
     folium.Marker(
         location=location_coords[origin],
@@ -333,5 +392,8 @@ def map_view(request):
         icon=folium.Icon(color="red", icon="home")
     ).add_to(m)
 
+    # Añadir el control de capas que mostrará checkboxes para cada camión
+    folium.LayerControl().add_to(m)
+
     map_html = m._repr_html_()
-    return render(request, "map.html", {"map": map_html})
+    return render(request, "map.html", {"map": map_html, "trucks_info": trucks_info_for_template})
