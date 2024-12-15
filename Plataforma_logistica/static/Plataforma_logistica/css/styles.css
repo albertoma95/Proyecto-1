@@ -1,0 +1,12 @@
+/* static/Plataforma_logistica/css/styles.css */
+
+.button-container {
+    display: flex;
+    gap: 10px; /* Espaciado entre los botones */
+}
+
+#mapa {
+    height: 450px; /* Altura del mapa */
+    width: 600px;  /* Ancho del mapa */
+    padding-top: 2em;
+}

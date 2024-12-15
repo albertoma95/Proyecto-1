@@ -4,12 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ejecutar función</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'Plataforma_logistica/css/styles.css' %}">
+    <script src="{% static 'Plataforma_logistica/js/scripts.js' %}" defer></script>
 </head>
 <body>
     <h1>Plataforma logística</h1>
-    <form action="/Plataforma_logistica/ejecutar_funcion/" method="POST">
-        {% csrf_token %}
-        <button type="submit">Generar pedidos</button>
-    </form>
+
+    <div class="button-container">
+        <button id="btn-generar-pedidos">Generar pedidos</button>
+        <button id="btn-calcular-rutas">Calcular rutas</button>
+    </div>
+
+    <div id="mapa">
+        {{ mapa_html|safe }}
+    </div>
 </body>
 </html>
