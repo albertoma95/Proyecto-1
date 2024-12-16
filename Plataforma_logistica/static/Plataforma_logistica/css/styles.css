@@ -15,8 +15,28 @@
     flex: 1 1 300px; 
 }
 
+html, body {
+    height: 100%;  /* Asegurarse de que la altura de la página cubra toda la ventana */
+    margin: 0;  /* Eliminar el margen por defecto */
+}
+
+.container-fluid {
+    height: 100vh;  /* Asegurarse de que el contenedor principal ocupe toda la altura de la ventana */
+    display: flex;
+    flex-direction: row;  /* Asegura que los elementos estén en fila (uno al lado del otro) */
+}
+
+.col-md-2 {
+    height: 100%;  /* Asegurarse de que la columna ocupe toda la altura */
+    display: flex;
+    flex-direction: column;  /* Los elementos dentro de la columna se distribuyen en columna */
+    justify-content: flex-start;  /* Asegura que los botones estén siempre en la parte superior */
+}
+
+
+
 #mapa {
-    height: 850px; /* Altura del mapa */
+    height: 600px; /* Altura del mapa */
     width: 1000px;  /* Ancho del mapa */
     padding-top: 2em;
 }

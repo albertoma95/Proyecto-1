@@ -24,14 +24,43 @@
                 <button id="btn-calcular-rutas" class="btn btn-success w-100">Calcular rutas</button>
             </div>
             
-  
           <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4"><div class="chartjs-size-monitor" style="position: absolute; inset: 0px; overflow: hidden; pointer-events: none; visibility: hidden; z-index: -1;"><div class="chartjs-size-monitor-expand" style="position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;pointer-events:none;visibility:hidden;z-index:-1;"><div style="position:absolute;width:1000000px;height:1000000px;left:0;top:0"></div></div><div class="chartjs-size-monitor-shrink" style="position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;pointer-events:none;visibility:hidden;z-index:-1;"><div style="position:absolute;width:200%;height:200%;left:0; top:0"></div></div></div>
             
-            <div id="mapa" class="mt-4">
+            <div id="mapa">
                 {{ mapa_html|safe }}
             </div>
 
-            <div id="trucks_info" class="row my-4"></div>
+            <div class="container mt-5">
+                <div class="row" id="trucks-container">
+                    <!-- Las tarjetas de camiones se agregarán dinámicamente aquí -->
+                </div>
+            
+                <!-- Paginación -->
+                <nav>
+                    <ul class="pagination justify-content-center" id="pagination">
+                        <!-- Los botones de paginación se agregarán dinámicamente aquí -->
+                    </ul>
+                </nav>
+
+                <!-- Modal -->
+                <div class="modal fade" id="truckModal" tabindex="-1" aria-labelledby="truckModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="truckModalLabel">Detalles del camión</h5>
+                                <!-- El botón de cierre debe tener este atributo -->
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body" id="truckModalBody">
+                                <!-- Aquí irá la información del camión -->
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
           </main>
         </div>
       </div>

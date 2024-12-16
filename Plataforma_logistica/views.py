@@ -411,13 +411,22 @@ def calcular_rutas(request):
             for day_num, coords_list in daily_routes:
                 day_color = darken_color(base_hex, day_num)
                 current_date_for_day = (start_route_date + timedelta(days=day_num - 1)).strftime('%Y-%m-%d')
+
+                popup_html = f"""
+                    <div class='route-popup' data-truck-id='{idx + 1}'>
+                        <strong>Camión {idx + 1}</strong><br>
+                        Día: {day_num} ({current_date_for_day})<br>
+                        Carga: {truck.total_quantity} unidades<br>
+                        Distancia: {cost:.2f} km<br>
+                    </div>
+                """
+
                 folium.PolyLine(
                     locations=coords_list,
                     color=day_color,
                     weight=3,
                     opacity=0.8,
-                    tooltip=(f"Camión {idx + 1}, Día {day_num} ({current_date_for_day}): "
-                            f"Carga {truck.total_quantity} unidades / Total {cost:.2f} km")
+                    popup=folium.Popup(popup_html, max_width=300),
                 ).add_to(truck_group)
 
             # Marcar pedidos en el mapa
