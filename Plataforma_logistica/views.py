@@ -294,9 +294,11 @@ def calcular_rutas(request):
         id_mataro = 73
 
         
-        m = folium.Map(location=[40.0, -3.7], zoom_start=6, tiles='CartoDB positron')
+        
 
         location_coords = {loc.id: (loc.latitud, loc.longitud) for loc in locations}
+
+        m = folium.Map(location=location_coords[id_mataro], zoom_start=6, tiles='CartoDB positron')
 
 
         for province, neighbors in graph.items():
@@ -325,6 +327,8 @@ def calcular_rutas(request):
             if not truck.orders:
                 continue
 
+            
+            
             start_route_date = datetime.now()
 
             destinations = [order.id_destino for order in truck.orders]
@@ -458,10 +462,11 @@ def calcular_rutas(request):
                     'orders': orders_this_day
                 })
 
+
             trucks_info_for_template.append(truck_info)
 
         folium.Marker(
-            location=[40.0, -3.7],
+            location=location_coords[id_mataro],
             popup=f"Origen: {id_mataro}",
             icon=folium.Icon(color="red", icon="home")
         ).add_to(m)
@@ -472,6 +477,6 @@ def calcular_rutas(request):
 
         # Devolver el HTML del nuevo mapa
         mapa_html = m._repr_html_()
-        return JsonResponse({"mapa_html": mapa_html})
+        return JsonResponse({"mapa_html": mapa_html,"trucks_info": trucks_info_for_template})
     
     return JsonResponse({"error": "Método no permitido."}, status=405)

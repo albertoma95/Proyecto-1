@@ -5,8 +5,18 @@
     gap: 10px; /* Espaciado entre los botones */
 }
 
+.truck-cards-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem; 
+    justify-content: flex-start; /* Puedes usar center para centrar las tarjetas */
+}
+.truck-card {
+    flex: 1 1 300px; 
+}
+
 #mapa {
-    height: 450px; /* Altura del mapa */
-    width: 600px;  /* Ancho del mapa */
+    height: 850px; /* Altura del mapa */
+    width: 1000px;  /* Ancho del mapa */
     padding-top: 2em;
 }

@@ -3,21 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ejecutar función</title>
+    <title>Proyecto 1</title>
+    
+    <!-- Cargar Bootstrap desde CDN -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
     {% load static %}
     <link rel="stylesheet" href="{% static 'Plataforma_logistica/css/styles.css' %}">
     <script src="{% static 'Plataforma_logistica/js/scripts.js' %}" defer></script>
 </head>
 <body>
-    <h1>Plataforma logística</h1>
+    <nav class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0">
+        <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">Plataforma de distribución de mercancías</a>
+    </nav>
 
-    <div class="button-container">
-        <button id="btn-generar-pedidos">Generar pedidos</button>
-        <button id="btn-calcular-rutas">Calcular rutas</button>
-    </div>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2 bg-light d-flex flex-column align-items-start p-3">
+                <button id="btn-generar-pedidos" class="btn btn-primary mb-2 w-100">Generar pedidos</button>
+                <button id="btn-calcular-rutas" class="btn btn-success w-100">Calcular rutas</button>
+            </div>
+            
+  
+          <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4"><div class="chartjs-size-monitor" style="position: absolute; inset: 0px; overflow: hidden; pointer-events: none; visibility: hidden; z-index: -1;"><div class="chartjs-size-monitor-expand" style="position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;pointer-events:none;visibility:hidden;z-index:-1;"><div style="position:absolute;width:1000000px;height:1000000px;left:0;top:0"></div></div><div class="chartjs-size-monitor-shrink" style="position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;pointer-events:none;visibility:hidden;z-index:-1;"><div style="position:absolute;width:200%;height:200%;left:0; top:0"></div></div></div>
+            
+            <div id="mapa" class="mt-4">
+                {{ mapa_html|safe }}
+            </div>
 
-    <div id="mapa">
-        {{ mapa_html|safe }}
-    </div>
+            <div id="trucks_info" class="row my-4"></div>
+          </main>
+        </div>
+      </div>
+
+    <!-- Cargar Bootstrap JS y dependencias de jQuery y Popper.js desde CDN -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
