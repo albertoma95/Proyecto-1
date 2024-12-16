@@ -23,7 +23,8 @@ class pedido(models.Model):
 class producto(models.Model):
     id = models.BigIntegerField(primary_key=True)  # Clave primaria
     nombre = models.TextField()  # Nombre del producto
-    precio = models.FloatField()  # Precio del producto, si aplica
+    precio = models.FloatField()
+    tiempo = models.IntegerField()
     caducidad = models.IntegerField()
 
     class Meta:

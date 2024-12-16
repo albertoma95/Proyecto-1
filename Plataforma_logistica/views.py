@@ -30,10 +30,6 @@ def index(request):
 
     return render(request, "index.html", {"mapa_html": mapa_html})
 
-
-
-from django.http import JsonResponse
-
 def generar_pedidos(request):
     if request.method == 'POST':
         try:
@@ -97,15 +93,14 @@ def load_graph():
         return json.load(file)
 
 
-def can_add_order(truck,order, order_quantity,graph, origin):
-        if truck.total_quantity + order_quantity > 120:
+def can_add_order(truck,order, order_quantity,graph, origin, speed, capacity):
+        if truck.total_quantity + order_quantity > capacity:
             return False
         
         expiration_date_obj = calcular_fecha_limite(order)
         distance, _ = dijkstra(graph, origin, order.id_destino)
         if distance == float('inf'):
             return False
-        speed = 120.0
         time_to_destination = timedelta(hours=distance / speed)
         arrival_date = datetime.now() + time_to_destination
         expiration_date_naive = expiration_date_obj.replace(tzinfo=None)
@@ -115,7 +110,7 @@ def can_add_order(truck,order, order_quantity,graph, origin):
         return True
 
 
-def assign_orders_to_trucks(ordered_orders,graph, origin):
+def assign_orders_to_trucks(ordered_orders,graph, origin,speed,capacity):
     trucks = []  # Lista para almacenar los camiones llenos
     truck_id = 1  # Identificador único para los camiones
 
@@ -129,7 +124,7 @@ def assign_orders_to_trucks(ordered_orders,graph, origin):
         total_quantity = sum(prod.cantidad for prod in productos_pedido)
 
         # Verificar si el camión actual puede aceptar el pedido
-        if can_add_order(current_truck,order,total_quantity,graph,origin):
+        if can_add_order(current_truck,order,total_quantity,graph,origin,speed,capacity):
             current_truck.add_order(order, total_quantity)
         else:
             # Si el camión está lleno, agregarlo a la lista y crear uno nuevo
@@ -146,6 +141,17 @@ def assign_orders_to_trucks(ordered_orders,graph, origin):
 
     return trucks
 
+def calcular_inicio_envio(orders: List[pedido]) -> Optional[datetime]:
+    fecha_maxima = datetime.now()
+    for order in orders:
+        productos_pedido = pedido_producto.objects.filter(id_pedido=order.id)
+        for prod_pedido in productos_pedido:
+            producto_info = producto.objects.get(id=prod_pedido.id_producto)
+            dias = producto_info.tiempo 
+            fecha_producto = datetime.now() + timedelta(days=dias)
+            fecha_maxima = max(fecha_maxima, fecha_producto)
+
+    return fecha_maxima
 
 def calcular_fecha_limite(pedido: pedido) -> Optional[datetime]:
     # Obtener productos relacionados con el pedido
@@ -155,7 +161,8 @@ def calcular_fecha_limite(pedido: pedido) -> Optional[datetime]:
     fechas_limite = []
     for prod_pedido in productos_pedido:
         producto_info = producto.objects.get(id=prod_pedido.id_producto)
-        fecha_limite_producto = pedido.fecha + timedelta(days=producto_info.caducidad)
+        # Fecha Pedido + Tiempo Fabricación + Días Caducidad 
+        fecha_limite_producto = pedido.fecha + timedelta(days=producto_info.tiempo) + timedelta(days=producto_info.caducidad)
         fechas_limite.append(fecha_limite_producto)
     
     # Retornar la fecha más temprana
@@ -287,13 +294,23 @@ def darken_color(hex_color, day_num):
 
 def calcular_rutas(request):
     if request.method == 'POST':
+        body = json.loads(request.body)
+        velocidad = float(body.get('velocidad', 0)) 
+        capacidad = int(body.get('capacidad', 0))
+        coste_km = float(body.get('coste_km', 0)) 
+
+        print(velocidad)
+        print(capacidad)
+
+        if not velocidad or not capacidad or not coste_km or velocidad <= 0 or capacidad <= 0 or coste_km <= 0:
+            return JsonResponse({'error': 'Todos los valores deben ser mayores que 0.'}, status=400)
+
         graph = load_graph()
         graph = {int(k): {int(neighbor): weight for neighbor, weight in v.items()} for k, v in graph.items()}
         locations =  destino.objects.all()
         orders = list(pedido.objects.all().order_by('fecha'))
         id_mataro = 73
 
-        
         
 
         location_coords = {loc.id: (loc.latitud, loc.longitud) for loc in locations}
@@ -315,11 +332,10 @@ def calcular_rutas(request):
 
         
         pedidos_prioritarios = (obtener_pedidos_prioritarios(orders))
-        trucks = assign_orders_to_trucks(pedidos_prioritarios,graph,id_mataro)
+        trucks = assign_orders_to_trucks(pedidos_prioritarios,graph,id_mataro,velocidad,capacidad)
         original_colors = ['blue', 'green', 'purple', 'orange', 'darkred', 'cadetblue']
-        speed = 120.0
         daily_hours = 8
-        daily_limit_distance = daily_hours * speed  # 960 km/día
+        daily_limit_distance = daily_hours * velocidad  # 960 km/día
         trucks_info_for_template = []
 
 
@@ -327,9 +343,10 @@ def calcular_rutas(request):
             if not truck.orders:
                 continue
 
-            
-            
-            start_route_date = datetime.now()
+            # de todos los pedidos del camion obtener la fecha del producto que mas tarde en hacerse
+
+            start_route_date = calcular_inicio_envio(truck.orders)
+            print(start_route_date)
 
             destinations = [order.id_destino for order in truck.orders]
             cost, best_route = calculate_optimal_route(graph, id_mataro, destinations)

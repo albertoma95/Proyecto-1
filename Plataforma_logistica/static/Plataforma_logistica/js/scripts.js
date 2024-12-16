@@ -27,12 +27,38 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("btn-calcular-rutas").addEventListener("click", function (event) {
         event.preventDefault();
 
+        // Capturar valores de los campos
+        const velocidad = document.getElementById("input-velocidad").value;
+        const capacidad = document.getElementById("input-capacidad").value;
+        const costeKm = document.getElementById("input-coste-km").value;
+
+        // Validación adicional
+        if (!velocidad || velocidad <= 0) {
+            alert("La velocidad debe ser mayor que 0.");
+            return;
+        }
+
+        if (!capacidad || capacidad <= 0) {
+            alert("La capacidad debe ser mayor que 0.");
+            return;
+        }
+
+        if (!costeKm || costeKm <= 0) {
+            alert("El coste por kilómetro debe ser mayor que 0.");
+            return;
+        }
+
         fetch("/Plataforma_logistica/calcular_rutas/", {
             method: "POST",
             headers: {
                 "X-CSRFToken": getCookie("csrftoken"),
                 "Content-Type": "application/json",
             },
+            body: JSON.stringify({
+                velocidad: velocidad,
+                capacidad: capacidad,
+                coste_km: costeKm,
+            }),
         })
             .then((response) => response.json())
             .then((data) => {

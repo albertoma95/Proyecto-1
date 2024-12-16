@@ -21,6 +21,19 @@
         <div class="row">
             <div class="col-md-2 bg-light d-flex flex-column align-items-start p-3">
                 <button id="btn-generar-pedidos" class="btn btn-primary mb-2 w-100">Generar pedidos</button>
+
+                <!-- Campo de entrada para Velocidad -->
+                <label for="input-velocidad" class="form-label">Velocidad (km/h):</label>
+                <input id="input-velocidad" type="number" class="form-control mb-2" placeholder="Ej. 80" step="0.1">
+
+                <!-- Campo de entrada para Capacidad -->
+                <label for="input-capacidad" class="form-label">Capacidad (unidades):</label>
+                <input id="input-capacidad" type="number" class="form-control mb-2" placeholder="Ej. 1000" step="1">
+
+                <!-- Campo de entrada para Coste por kilómetro -->
+                <label for="input-coste-km" class="form-label">Coste por km (€):</label>
+                <input id="input-coste-km" type="number" class="form-control mb-3" placeholder="Ej. 0.5" step="0.01">
+
                 <button id="btn-calcular-rutas" class="btn btn-success w-100">Calcular rutas</button>
             </div>
             
