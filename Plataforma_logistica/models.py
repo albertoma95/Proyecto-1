@@ -24,6 +24,7 @@ class producto(models.Model):
     id = models.BigIntegerField(primary_key=True)  # Clave primaria
     nombre = models.TextField()  # Nombre del producto
     precio = models.FloatField()  # Precio del producto, si aplica
+    caducidad = models.IntegerField()
 
     class Meta:
         db_table = 'producto'  # Nombre de la tabla en la base de datos
@@ -31,6 +32,7 @@ class producto(models.Model):
 
 
 class pedido_producto(models.Model):
+    id = models.BigIntegerField(primary_key=True)  # Clave primaria
     id_pedido = models.BigIntegerField()  # Relacionado con la tabla `pedido`
     id_producto = models.BigIntegerField()  # Relacionado con la tabla `producto`
     cantidad = models.IntegerField()  # Cantidad del producto en el pedido
@@ -38,3 +40,18 @@ class pedido_producto(models.Model):
     class Meta:
         db_table = 'pedido_producto'  # Nombre de la tabla en la base de datos
         managed = False  # Django no gestionará esta tabla
+
+
+
+class Truck:
+    def __init__(self, truck_id):
+        self.truck_id = truck_id
+        self.orders = []  # Lista de pedidos asignados
+        self.total_quantity = 0  # Cantidad total de productos en el camión
+
+
+    def add_order(self, order, order_quantity):
+        """Asigna un pedido al camión y actualiza la cantidad total."""
+        self.orders.append(order)
+        self.total_quantity += order_quantity
+
