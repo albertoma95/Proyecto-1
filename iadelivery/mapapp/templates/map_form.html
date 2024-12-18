@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>IADelivery</title>
+    <!-- Incluir Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <!-- Primera tarjeta: Formulario de Cálculo de Rutas -->
+            <div class="col-md-6 col-lg-5 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h2 class="card-title mb-4 text-center">Parámetros de Cálculo</h2>
+                        <form method="POST" action="">
+                            {% csrf_token %}
+                            {{ form.as_p }}
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Calcular Rutas</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Segunda tarjeta: Campos para Generar Datos (sin acción) -->
+            <div class="col-md-6 col-lg-5">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h2 class="card-title mb-4 text-center">Generar Pedidos</h2>
+                        
+                        <!-- Campos del "formulario" de generate_data -->
+                        <div class="mb-3">
+                            <label for="num_orders" class="form-label">Número de pedidos:</label>
+                            <input type="number" class="form-control" id="num_orders" value="{{ data_defaults.num_orders }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="avg_lines_per_order" class="form-label">Líneas promedio por pedido:</label>
+                            <input type="number" class="form-control" id="avg_lines_per_order" value="{{ data_defaults.avg_lines_per_order }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="max_quantity_per_line" class="form-label">Cantidad máxima por línea:</label>
+                            <input type="number" class="form-control" id="max_quantity_per_line" value="{{ data_defaults.max_quantity_per_line }}">
+                        </div>
+
+                        <div class="d-grid">
+                            <!-- Botón sin action, onClick llama a una función JS -->
+                            <!-- Dentro del segundo card, justo después del botón "Generar Datos" -->
+                        <div class="d-grid gap-2 mt-2">
+                            <button type="button" class="btn btn-secondary" onclick="generateOrders()">Generar Datos</button>
+                            <button type="button" class="btn btn-info" onclick="generateTestData()">Generar Datos de Prueba</button>
+                        </div>
+                        </div>
+                        
+                        {% if message %}
+                            <div class="alert alert-info mt-3" role="alert">
+                                {{ message }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript para AJAX -->
+    <script>
+    function generateOrders(){
+        const num_orders = document.getElementById('num_orders').value;
+        const avg_lines_per_order = document.getElementById('avg_lines_per_order').value;
+        const max_quantity_per_line = document.getElementById('max_quantity_per_line').value;
+
+        const csrftoken = getCookie('csrftoken'); // Necesitamos el token CSRF
+        fetch("{% url 'generate_data_ajax' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'Accept': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+                'num_orders': num_orders,
+                'avg_lines_per_order': avg_lines_per_order,
+                'max_quantity_per_line': max_quantity_per_line
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status === 'ok'){
+                alert(data.message);
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(err => console.error(err));
+    }
+
+    // Función para obtener el token CSRF desde las cookies (Django)
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Este if comprueba si la cookie empieza con "name="
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    function generateTestData(){
+        const csrftoken = getCookie('csrftoken');
+        fetch("{% url 'generate_test_data_ajax' %}", {  // Asume que crearás esta URL
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'Accept': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status === 'ok'){
+                alert(data.message);
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(err => console.error(err));
+    }
+    </script>
+
+    <!-- Bootstrap JS (opcional) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
