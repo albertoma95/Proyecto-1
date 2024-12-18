@@ -64,6 +64,7 @@ document.addEventListener("DOMContentLoaded", function () {
             .then((data) => {
                 if (data.mapa_html) {
                     document.getElementById("mapa").innerHTML = data.mapa_html;
+                    document.getElementById("total-trucks-used").innerHTML = data.total_trucks_used;
 
                     const trucksInfo = data.trucks_info;
                     const trucksPerPage = 6;
@@ -85,7 +86,9 @@ document.addEventListener("DOMContentLoaded", function () {
                                         <div class="card-body">
                                             <h5 class="card-title">Camión ${truck.truck_number}</h5>
                                             <p><strong>Día de inicio de reparto:</strong> ${truck.start_date}</p>
+                                            <p><strong>Día final de reparto:</strong> ${truck.end_date}</p>
                                             <p><strong>Días totales de la ruta:</strong> ${truck.total_days}</p>
+                                            <p><strong>Coste reparto:</strong> ${truck.money.toFixed(2)}€</p>
                                             
                                             <!-- Botón para ver más detalles -->
                                             <button class="btn btn-primary btn-sm view-truck-info" type="button" data-truck-id="${truck.truck_number}">
@@ -131,9 +134,11 @@ document.addEventListener("DOMContentLoaded", function () {
                             if (truck) {
                                 // Crear contenido dinámico para el modal
                                 let modalContent = `
-                                    <h5>Camión ${truck.truck_number}</h5>
+                                    <h5>Camión ${truckId}</h5>
                                     <p><strong>Día de inicio de reparto:</strong> ${truck.start_date}</p>
+                                    <p><strong>Día final de reparto:</strong> ${truck.end_date}</p>
                                     <p><strong>Días totales de la ruta:</strong> ${truck.total_days}</p>
+                                    <p><strong>Coste reparto:</strong> ${truck.money.toFixed(2)}€</p>
                                     <h6>Órdenes:</h6>
                                     ${truck.daily_orders.map(dayData => `
                                         <h6>Día ${dayData.day_num}:</h6>
@@ -141,7 +146,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                             <ul class="list-group list-group-flush mb-3">
                                                 ${dayData.orders.map(order => `
                                                     <li class="list-group-item">
-                                                        Pedido ${order.id} - Caduca: ${order.expiration_date}
+                                                        Pedido ${order.id}
                                                     </li>
                                                 `).join('')}
                                             </ul>

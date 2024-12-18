@@ -12,6 +12,8 @@ import heapq
 from typing import Optional,List, Tuple
 import itertools
 import math
+from sklearn.cluster import DBSCAN
+import numpy as np
 
 def index(request):
    
@@ -109,37 +111,45 @@ def can_add_order(truck,order, order_quantity,graph, origin, speed, capacity):
 
         return True
 
-
-def assign_orders_to_trucks(ordered_orders,graph, origin,speed,capacity):
+def assign_orders_to_trucks(
+    clustered_orders: List[List[Tuple[pedido, datetime]]],
+    graph,
+    origin,
+    speed: float,
+    capacity: float
+) -> List[Truck]:
+    
     trucks = []  # Lista para almacenar los camiones llenos
     truck_id = 1  # Identificador único para los camiones
 
-    # Inicializar el primer camión
-    current_truck = Truck(truck_id)
-    truck_id += 1
+    for cluster in clustered_orders:
+        # Inicializar el primer camión para el cluster actual
+        current_truck = Truck(truck_id)
+        truck_id += 1
 
-    for order, _ in ordered_orders:  # Iterar sobre los pedidos con prioridad
-        # Obtener la cantidad total de productos en el pedido
-        productos_pedido = pedido_producto.objects.filter(id_pedido=order.id)
-        total_quantity = sum(prod.cantidad for prod in productos_pedido)
+        for order, _ in cluster:  # Iterar sobre los pedidos en el cluster
+            # Obtener la cantidad total de productos en el pedido
+            productos_pedido = pedido_producto.objects.filter(id_pedido=order.id)
+            total_quantity = sum(prod.cantidad for prod in productos_pedido)
 
-        # Verificar si el camión actual puede aceptar el pedido
-        if can_add_order(current_truck,order,total_quantity,graph,origin,speed,capacity):
-            current_truck.add_order(order, total_quantity)
-        else:
-            # Si el camión está lleno, agregarlo a la lista y crear uno nuevo
+            # Verificar si el camión actual puede aceptar el pedido
+            if can_add_order(current_truck, order, total_quantity, graph, origin, speed, capacity):
+                current_truck.add_order(order, total_quantity)
+            else:
+                # Si el camión está lleno, agregarlo a la lista y crear uno nuevo
+                trucks.append(current_truck)
+                current_truck = Truck(truck_id)
+                truck_id += 1
+
+                # Añadir el pedido al nuevo camión
+                current_truck.add_order(order, total_quantity)
+
+        # Agregar el último camión del cluster (si tiene pedidos) a la lista
+        if current_truck.orders:
             trucks.append(current_truck)
-            current_truck = Truck(truck_id)
-            truck_id += 1
-
-            # Añadir el pedido al nuevo camión
-            current_truck.add_order(order, total_quantity)
-
-    # Agregar el último camión (si tiene pedidos) a la lista
-    if current_truck.orders:
-        trucks.append(current_truck)
 
     return trucks
+
 
 def calcular_inicio_envio(orders: List[pedido]) -> Optional[datetime]:
     fecha_maxima = datetime.now()
@@ -182,7 +192,52 @@ def obtener_pedidos_prioritarios(orders: List[pedido]) -> List[Tuple[pedido, dat
     pedidos_con_prioridad.sort(key=lambda x: x[1])
 
     return pedidos_con_prioridad
-  
+
+def obtener_destinos(pedidos: List[pedido]) -> List[Tuple[float, float]]:
+    
+    coordenadas = []
+    pedidos_validos = []
+    
+    for ped in pedidos:
+        try:
+            dest = destino.objects.get(id=ped.id_destino)  # Obtener el destino asociado al pedido
+            if dest.latitud and dest.longitud:  # Asegurarse de que tenga coordenadas válidas
+                coordenadas.append((dest.latitud, dest.longitud))
+                pedidos_validos.append(ped)
+        except destino.DoesNotExist:
+            continue  # Ignorar pedidos con destinos inválidos
+
+    return coordenadas, pedidos_validos
+
+
+def agrupar_y_ordenar_pedidos(orders: List[pedido], eps: float = 0.01, min_samples: int = 2) -> List[List[Tuple[pedido, datetime]]]:
+    
+    
+    coordenadas, pedidos_validos = obtener_destinos(orders)
+    
+    if len(coordenadas) == 0:
+        raise ValueError("No se encontraron coordenadas válidas en los pedidos.")
+    
+    # Aplicar DBSCAN para agrupar las coordenadas
+    dbscan = DBSCAN(eps=eps, min_samples=min_samples)
+    labels = dbscan.fit_predict(coordenadas)
+    
+    # Crear grupos de pedidos según los clusters
+    grupos = {}
+    for i, label in enumerate(labels):
+        if label != -1:  # Ignorar puntos considerados "ruido"
+            if label not in grupos:
+                grupos[label] = []
+            grupos[label].append(pedidos_validos[i])
+    
+    # Ordenar los pedidos dentro de cada grupo por su fecha de caducidad
+    grupos_ordenados = []
+    for cluster_pedidos in grupos.values():
+        if cluster_pedidos:  # Asegurarse de que el grupo no esté vacío
+            pedidos_ordenados = obtener_pedidos_prioritarios(cluster_pedidos)
+            grupos_ordenados.append(pedidos_ordenados)
+    
+    return grupos_ordenados
     
 def dijkstra(graph, start, end):
     queue = [(0, start, [])]
@@ -291,6 +346,18 @@ def darken_color(hex_color, day_num):
     b = int(b * factor)
     return f"#{r:02X}{g:02X}{b:02X}"
 
+def get_available_truck_for_next_route(next_start_date: datetime, reAvailable_trucks: list):
+    for truck_data in reAvailable_trucks:
+        truck_info = truck_data['info']
+        
+        # Convertir end_date de truck_info a tipo datetime (si es necesario)
+        end_date = datetime.strptime(truck_info['end_date'], '%Y-%m-%d')  # Asumiendo que end_date está en formato string
+
+        # Compara si la fecha de finalización del camión es anterior a la fecha de inicio del próximo reparto
+        if end_date < next_start_date:
+            return truck_data  # Retorna el camión disponible para ser reutilizado
+    
+    return None
 
 def calcular_rutas(request):
     if request.method == 'POST':
@@ -298,9 +365,6 @@ def calcular_rutas(request):
         velocidad = float(body.get('velocidad', 0)) 
         capacidad = int(body.get('capacidad', 0))
         coste_km = float(body.get('coste_km', 0)) 
-
-        print(velocidad)
-        print(capacidad)
 
         if not velocidad or not capacidad or not coste_km or velocidad <= 0 or capacidad <= 0 or coste_km <= 0:
             return JsonResponse({'error': 'Todos los valores deben ser mayores que 0.'}, status=400)
@@ -331,8 +395,11 @@ def calcular_rutas(request):
 
 
         
-        pedidos_prioritarios = (obtener_pedidos_prioritarios(orders))
+        eps = 0.9
+        min_samples = 3
+        pedidos_prioritarios = agrupar_y_ordenar_pedidos(orders, eps=eps, min_samples=min_samples)
         trucks = assign_orders_to_trucks(pedidos_prioritarios,graph,id_mataro,velocidad,capacidad)
+        reAvailable_trucks = []
         original_colors = ['blue', 'green', 'purple', 'orange', 'darkred', 'cadetblue']
         daily_hours = 8
         daily_limit_distance = daily_hours * velocidad  # 960 km/día
@@ -342,11 +409,18 @@ def calcular_rutas(request):
         for idx, truck in enumerate(trucks):
             if not truck.orders:
                 continue
+            
 
             # de todos los pedidos del camion obtener la fecha del producto que mas tarde en hacerse
-
             start_route_date = calcular_inicio_envio(truck.orders)
-            print(start_route_date)
+
+            truck_to_assign = get_available_truck_for_next_route(start_route_date, reAvailable_trucks)
+
+            if truck_to_assign:
+                 truck_to_assign['truck'].orders = truck.orders
+                 truck = truck_to_assign['truck']
+                 reAvailable_trucks.remove(truck_to_assign)
+            
 
             destinations = [order.id_destino for order in truck.orders]
             cost, best_route = calculate_optimal_route(graph, id_mataro, destinations)
@@ -419,7 +493,7 @@ def calcular_rutas(request):
             
 
             # Crear un FeatureGroup por camión
-            truck_group = folium.FeatureGroup(name=f"Camión {idx+1}", show=True)
+            truck_group = folium.FeatureGroup(name=f"Ruta {idx+1}", show=True)
 
             # Dibujar rutas en el mapa dentro del FeatureGroup
             base_color_name = original_colors[idx % len(original_colors)]
@@ -476,9 +550,11 @@ def calcular_rutas(request):
                         break
 
             truck_info = {
-                'truck_number': idx + 1,
+                'truck_number': truck.truck_id,
                 'total_days': day_count,
                 'start_date': start_route_date.strftime('%Y-%m-%d'),
+                'end_date':  (start_route_date + timedelta(days=day_count)).strftime('%Y-%m-%d'),
+                'money': cost * coste_km,
                 'daily_orders': []
             }
             for dnum in range(1, day_count+1):
@@ -488,8 +564,8 @@ def calcular_rutas(request):
                     'orders': orders_this_day
                 })
 
-
             trucks_info_for_template.append(truck_info)
+            reAvailable_trucks.append({'truck':truck,'info':truck_info})
 
         folium.Marker(
             location=location_coords[id_mataro],
@@ -502,7 +578,10 @@ def calcular_rutas(request):
 
 
         # Devolver el HTML del nuevo mapa
+        unique_truck_ids = {truck_info['truck_number'] for truck_info in trucks_info_for_template}
+        total_trucks_used = len(unique_truck_ids)
+        print(total_trucks_used)
         mapa_html = m._repr_html_()
-        return JsonResponse({"mapa_html": mapa_html,"trucks_info": trucks_info_for_template})
+        return JsonResponse({"mapa_html": mapa_html,"trucks_info": trucks_info_for_template,"total_trucks_used":total_trucks_used})
     
     return JsonResponse({"error": "Método no permitido."}, status=405)
